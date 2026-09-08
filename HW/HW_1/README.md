@@ -60,7 +60,11 @@
 
 ### Q14, 1,1 балла
 
-Покажите рейсы из таблицы `flights`, у которых календарный день планового вылета совпадает с днём `bookings.now()`, вылет не раньше `bookings.now()` и строго раньше, чем через три часа. Выведите `flight_id`, `route_no`, `scheduled_departure` и день вылета `departure_date` (дата из `scheduled_departure`). Отсортируйте по `scheduled_departure`, затем по `flight_id`.
+Покажите рейсы из таблицы `flights`, у которых:
+- плановый вылет в тот же календарный день, что у `bookings.now()`;
+- этот вылет не раньше `bookings.now()` и при этом раньше, чем через три часа от него.
+
+Выведите `flight_id`, `route_no`, `scheduled_departure` и день вылета `departure_date`. Отсортируйте по `scheduled_departure`, затем по `flight_id`.
 
 ### Q15, 1,1 балла
 
