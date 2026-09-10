@@ -42,7 +42,7 @@
 
 - `GROUP BY`; агрегатные функции: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`.
 - `HAVING` vs `WHERE` – на простом примере.
-- Scalar-подзапрос; агрегат с `FILTER`; подзапрос во `FROM`.
+- Scalar-подзапрос; `COUNT(DISTINCT ...)`; агрегат с `FILTER`; подзапрос во `FROM`.
 - `string_agg`; первое знакомство с `WITH` (CTE).
 
 ---
