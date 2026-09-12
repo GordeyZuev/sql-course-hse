@@ -12,7 +12,7 @@
 4. `GROUP BY`.
 5. **Расширенный конвейер** – куда писать `GROUP BY` и `HAVING`.
 6. `WHERE` **vs** `HAVING` – фильтр строк и фильтр групп.
-7. `**MIN` и `MAX**` – самый ранний и самый поздний в наборе.
+7. `MIN` и `MAX` – самый ранний и самый поздний в наборе.
 8. **Scalar-подзапрос** – один порог из всей таблицы.
 9. `COUNT(DISTINCT ...)` – уникальные значения внутри группы.
 10. `FILTER` – условный агрегат без лишнего `CASE`.
@@ -23,7 +23,11 @@
 
 ---
 
+
+
 ## **Часть 0. От строки к показателю**
+
+
 
 ### Про определение строки
 
@@ -35,10 +39,7 @@
 
 Сегодня мы поработаем с другим смыслом. Исходная таблица `flights` – это «одна строка = один рейс». После `GROUP BY status` – «одна строка = один статус и его показатели».
 
-<p>
-<img src="../Others/extra_pics/cats.png" width="880" alt="Строки таблицы до сжатия" style="display: block; margin: 0.75em 0;" />
-<img src="../Others/extra_pics/grouped_cats.png" width="880" alt="После GROUP BY — отдельный мешок на группу" style="display: block; margin: 0.75em 0;" />
-</p>
+![Строки таблицы до сжатия](../Others/extra_pics/cats.png)![После GROUP BY – отдельный мешок на группу](../Others/extra_pics/grouped_cats.png)
 
 Кратко – таблицы, с которыми будем работать чаще всего:
 
@@ -50,6 +51,8 @@
 | `segments`  | один сегмент билета на рейсе   | средняя цена по классу тарифа?    |
 | `tickets`   | один билет                     | сколько билетов в бронировании?   |
 | `airports`  | один аэропорт                  | сколько аэропортов в стране?      |
+
+
 
 
 ### Зачем сжимать в SQL, а не в Python
@@ -82,6 +85,8 @@ FROM → WHERE → (NEW) GROUP BY → (NEW) HAVING → SELECT → DISTINCT → O
 Теперь сначала мы отбираем строки, потом сжимаем, потом отбрасываем группы, потом формируем список колонок результата.
 
 ---
+
+
 
 ## **Часть I. Агрегатные функции**
 
@@ -153,6 +158,8 @@ Grain: вся таблица сегментов одним «мешком». К�
 
 ---
 
+
+
 ## **Часть II.** `COUNT(*)` **и** `COUNT(column)`
 
 `COUNT` – самый частый агрегат и самый коварный.
@@ -165,6 +172,8 @@ Grain: вся таблица сегментов одним «мешком». К�
 SELECT count(*) AS all_rows
 FROM flights;
 ```
+
+
 
 ### `COUNT(column)` – число non-NULL
 
@@ -190,6 +199,8 @@ FROM flights;
 
 ---
 
+
+
 ## **Часть III. NULL в агрегатах**
 
 Правило для `SUM`, `AVG`, `MIN`, `MAX`: **NULL не участвует** в расчёте (!)
@@ -209,6 +220,8 @@ WHERE status = 'Arrived';
 
 ---
 
+
+
 ## **Часть IV.** `GROUP BY`
 
 > `GROUP BY` – правило, по каким колонкам (или выражениям) разбить строки на **группы**. В каждой группе агрегаты считаются отдельно.
@@ -220,14 +233,18 @@ GROUP BY status
 ORDER BY flight_count DESC, status;
 ```
 
+
+
 ### Что можно писать в `SELECT`
 
 Либо колонка входит в `GROUP BY`, либо она внутри агрегата. Иначе PostgreSQL не понимает, какое значение показать из группы:
 
+
+
 ```sql
 -- Ошибка: departure_airport не в GROUP BY и не в агрегате.
 SELECT departure_airport, status, count(*)
-FROM flights
+FROM timetable
 GROUP BY status;
 ```
 
@@ -245,6 +262,8 @@ GROUP BY departure_airport, arrival_airport
 ORDER BY flight_count DESC, departure_airport, arrival_airport
 LIMIT 10;
 ```
+
+
 
 ### Группировка по выражению
 
@@ -323,6 +342,8 @@ LIMIT 10;
 
 ---
 
+
+
 ## **Часть V. Расширенный конвейер**
 
 Полная логическая модель одного `SELECT` без `JOIN`:
@@ -351,6 +372,8 @@ ORDER BY airport_count DESC, country;
 ```
 
 ---
+
+
 
 ## **Часть VI.** `WHERE` **vs** `HAVING`
 
@@ -403,11 +426,13 @@ Grain: один аэропорт отправления и число подхо
 
 ---
 
-## **Часть VII.** `MIN` **и** `MAX` **— края набора**
+
+
+## **Часть VII.** `MIN` **и** `MAX` **– края набора**
 
 `MIN` и `MAX` отвечают на простой вопрос: **какое значение в наборе самое маленькое и самое большое?** Для дат это часто «самый ранний» и «самый поздний» момент.
 
-Без `GROUP BY` края считаются по **всей** таблице (после `WHERE`, если он есть) — снова одна строка результата:
+Без `GROUP BY` края считаются по **всей** таблице (после `WHERE`, если он есть) – снова одна строка результата:
 
 ```sql
 -- grain: вся таблица flights.
@@ -416,7 +441,7 @@ SELECT min(scheduled_departure) AS earliest_departure,
 FROM flights;
 ```
 
-Сузим срез — и `MIN`/`MAX` пересчитаются только по отобранным рейсам:
+Сузим срез – и `MIN`/`MAX` пересчитаются только по отобранным рейсам:
 
 ```sql
 SELECT min(scheduled_departure) AS earliest_departure,
@@ -424,6 +449,8 @@ SELECT min(scheduled_departure) AS earliest_departure,
 FROM flights
 WHERE status = 'Scheduled';
 ```
+
+
 
 ### Внутри группы
 
@@ -441,7 +468,7 @@ ORDER BY flight_count DESC, status;
 
 `MIN` и `MAX`, как `AVG`, **не учитывают** `NULL`: если у части рейсов время неизвестно, края считаются только по заполненным строкам.
 
-> В HW2 среднюю цену иногда просят как `round(avg(price), 2)` — округляйте **уже среднее**, не каждую цену в таблице. Отдельной «лекции про проценты» на этой паре нет: доли и `100.0` разберём позже, когда понадобятся в отчётах.
+> В HW2 среднюю цену иногда просят как `round(avg(price), 2)` – округляйте **уже среднее**, не каждую цену в таблице. Отдельной «лекции про проценты» на этой паре нет: доли и `100.0` разберём позже, когда понадобятся в отчётах.
 
 ---
 
@@ -451,9 +478,28 @@ ORDER BY flight_count DESC, status;
 
 > **Scalar-подзапрос** – подзапрос в скобках, который возвращает **ровно одно значение** (одна строка, одна колонка). Его можно подставить туда, где ждут одно число или строку.
 
+**Шаг 1.** Одно число «из другого запроса» в `SELECT` – без `GROUP BY`:
 
+```sql
+SELECT (SELECT count(*) FROM flights) AS total_flights;
+```
 
-Классический пример – порог «выше среднего»:
+Внутренний запрос выполняется сам по себе и отдаёт одно значение; снаружи получается одна строка с одной колонкой.
+
+**Шаг 2.** Тот же приём в `WHERE` – сравнение с одним порогом:
+
+```sql
+SELECT ticket_no, flight_id, price
+FROM segments
+WHERE price > 10000
+  AND price > (SELECT avg(price) FROM segments)
+ORDER BY price DESC
+LIMIT 10;
+```
+
+Сначала можно мысленно выполнить `(SELECT avg(price) FROM segments)` – одно число – и подставить его в условие.
+
+Классический пример – только порог «выше среднего»:
 
 ```sql
 SELECT ticket_no, flight_id, price
@@ -464,8 +510,6 @@ LIMIT 20;
 ```
 
 Внутренний `SELECT avg(price) FROM segments` не видит внешний `WHERE` – это **общее** среднее по всей таблице `segments`.
-
-
 
 Тот же приём в `HAVING`:
 
@@ -483,11 +527,9 @@ ORDER BY avg_price DESC, fare_conditions;
 
 PostgreSQL выдаст ошибку: scalar ожидает одно значение. Это защита от неоднозначности.
 
-
-
 ### Подзапрос в `SELECT`
 
-Scalar можно вывести **рядом** с групповым агрегатом — как ориентир «максимум по всей таблице»:
+Scalar можно вывести **рядом** с групповым агрегатом – как ориентир «максимум по всей таблице»:
 
 ```sql
 SELECT fare_conditions,
@@ -501,6 +543,8 @@ ORDER BY fare_conditions;
 Внутренний запрос не зависит от текущей группы: это один общий `max` для всего `segments`.
 
 ---
+
+
 
 ## **Часть IX.** `COUNT(DISTINCT ...)`
 
@@ -520,6 +564,8 @@ LIMIT 10;
 Не путать с `DISTINCT` в начале `SELECT`: тот убирает дубли **готовых строк результата**, а `COUNT(DISTINCT ...)` – считает уникальные значения **внутри агрегата**.
 
 ---
+
+
 
 ## **Часть X.** `FILTER` **– условный агрегат**
 
@@ -553,6 +599,8 @@ LIMIT 10;
 `FILTER` – часть **агрегата**, не замена `WHERE`. `WHERE` режет входные строки до группировки; `FILTER` выбирает, какие строки группы попадают в конкретный счётчик.
 
 ---
+
+
 
 ## **Часть XI. Задержка в минутах**
 
@@ -606,6 +654,8 @@ Grain: один статус и средняя задержка по рейса�
 
 ---
 
+
+
 ## **Часть XII.** `string_agg` **– склеить значения группы**
 
 > `string_agg` – агрегат: склеивает текст из строк группы в **одну** строку. Синтаксис: `string_agg(колонка, 'разделитель')`.
@@ -622,9 +672,40 @@ ORDER BY ticket_no
 LIMIT 10;
 ```
 
-Grain: одна строка – один `ticket_no`, в ячейке – все значения `fare_conditions` через запятую. Если у билета несколько сегментов с одним классом, класс может повториться в списке.
+Grain: одна строка – один `ticket_no`, в ячейке – все значения `fare_conditions` через запятую. Если у билета несколько сегментов с одним классом, класс может повториться в списке – в ячейке тогда **одно** слово без запятой.
 
-**Шаг 2.** Уникальные значения и порядок **внутри** строки:
+**Шаг 2.** Наглядный пример: **названия аэропортов в городе** (`airports`). Grain – пара `city` и `country` (одинаковые названия городов в разных странах не смешиваем):
+
+```sql
+SELECT city,
+       country,
+       string_agg(airport_name, ', ' ORDER BY airport_code) AS airports_in_city
+FROM airports
+WHERE city = 'Moscow'
+  AND country = 'Russia'
+GROUP BY city, country;
+```
+
+Одна строка: в `airports_in_city` через `', '` перечислены Sheremetyevo, Domodedovo, Vnukovo – **запятые видны**, потому что в группе несколько аэропортов.
+
+Города, где аэропортов **больше одного**:
+
+```sql
+SELECT city,
+       country,
+       count(*) AS airport_count,
+       string_agg(airport_code, ', ' ORDER BY airport_code) AS airport_codes,
+       string_agg(airport_name, ', ' ORDER BY airport_code) AS airport_names
+FROM airports
+GROUP BY city, country
+HAVING count(*) > 1
+ORDER BY airport_count DESC, city, country
+LIMIT 10;
+```
+
+`ORDER BY airport_code` внутри `string_agg` задаёт порядок **кусочков в строке** (DME, SVO, VKO), не порядок строк ответа.
+
+**Шаг 3.** Уникальные значения и порядок **внутри** строки (снова `segments`):
 
 ```sql
 SELECT ticket_no,
@@ -643,9 +724,40 @@ LIMIT 10;
 
 ---
 
+
+
 ## **Часть XIII. Подзапрос во** `FROM`
 
-Иногда сначала нужна **промежуточная таблица**: сгруппировать, а потом ещё раз агрегировать.
+Подзапрос в скобках после `FROM` – **временная таблица** внутри одного запроса. Ей **обязательно** нужен alias (имя), как `arrived_sample` ниже.
+
+**Шаг 1.** Внутри – обычный `SELECT`, снаружи – снова обычный `SELECT`. Без группировки: «сначала сузили, потом прочитали»:
+
+```sql
+SELECT flight_id, status
+FROM (
+    SELECT flight_id, status
+    FROM flights
+    WHERE status = 'Arrived'
+    LIMIT 100
+) arrived_sample
+ORDER BY flight_id
+LIMIT 5;
+```
+
+**Шаг 2.** Снаружи – один агрегат по строкам внутреннего среза:
+
+```sql
+SELECT count(*) AS segment_count
+FROM (
+    SELECT price
+    FROM segments
+    WHERE flight_id <= 500
+) cheap_slice;
+```
+
+Grain снаружи – одна строка: сколько строк попало во внутренний `SELECT`.
+
+**Шаг 3.** Внутри – `GROUP BY`, снаружи – агрегат по **строкам внутреннего результата**:
 
 ```sql
 SELECT round(avg(total_price), 2) AS avg_ticket_price,
@@ -659,15 +771,46 @@ FROM (
 ) ticket_totals;
 ```
 
-Внутренний запрос – подзапрос во `FROM`. Ему **обязательно** нужен alias (`ticket_totals`). Снаружи grain – одна строка со статистикой по суммам билетов.
+Внутри: одна строка – один билет и сумма сегментов. Снаружи: одна строка – min / avg / max по этим суммам.
 
-Логика та же, что у CTE в следующей части, только без имени на верхнем уровне. Порядок чтения: сначала внутренний блок, потом внешний.
+Тот же шаг 3 можно записать через `WITH` – часть XIV; отличие только в том, **где** задаётся имя промежуточной таблицы.
 
 ---
 
+
+
 ## **Часть XIV.** `WITH` **– именованный шаг (CTE)**
 
-> **CTE** (Common Table Expression) – подзапрос с именем после `WITH`, на который ссылается основной запрос.
+> **CTE** (Common Table Expression) – именованный подзапрос после `WITH`. Дальше к нему обращаются **как к таблице** по этому имени.
+
+**Шаг 1.** Фильтр вынесен в имя – читается сверху вниз:
+
+```sql
+WITH arrived AS (
+    SELECT flight_id, status, scheduled_departure
+    FROM flights
+    WHERE status = 'Arrived'
+)
+SELECT count(*) AS arrived_count
+FROM arrived;
+```
+
+`arrived` – не таблица в базе, а шаг внутри **одного** statement.
+
+**Шаг 2.** В CTE уже группировка, снаружи – обычный `SELECT`:
+
+```sql
+WITH flights_by_status AS (
+    SELECT status, count(*) AS flight_count
+    FROM flights
+    GROUP BY status
+)
+SELECT status, flight_count
+FROM flights_by_status
+ORDER BY flight_count DESC, status;
+```
+
+**Шаг 3.** Фильтр и scalar по **тому же** CTE:
 
 ```sql
 WITH flight_revenue AS (
@@ -679,14 +822,17 @@ WITH flight_revenue AS (
 SELECT flight_id, revenue
 FROM flight_revenue
 WHERE revenue > (SELECT avg(revenue) FROM flight_revenue)
-ORDER BY revenue DESC, flight_id;
+ORDER BY revenue DESC, flight_id
+LIMIT 20;
 ```
 
-`flight_revenue` читается как временная таблица в рамках **одного** запроса. На следующей паре разберём CTE глубже – в связке с `JOIN`.
+`(SELECT avg(revenue) FROM flight_revenue)` – scalar: одно среднее по строкам CTE.
 
-Зачем имя, если можно вложить подзапрос во `FROM`? Когда шагов несколько или финальный `SELECT` длинный – CTE держит мысль по этапам, как ячейки в ноутбуке.
+Здесь: `WITH … AS ( SELECT … )` **+** `SELECT … FROM имя` – тот же смысл, что подзапрос во `FROM`, но имя шага в **начале** запроса; так проще, когда шагов несколько. Дальше CTE остаётся доступным нам как уже знакомый инструмент.
 
 ---
+
+
 
 ## **Часть XV. Типичные ошибки**
 
@@ -706,6 +852,8 @@ ORDER BY revenue DESC, flight_id;
 Перед сдачей HW2 для каждой задачи одной фразой: **одна строка результата – это…**
 
 ---
+
+
 
 ## **Another one шпаргалка!**
 
@@ -734,25 +882,26 @@ FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT
 
 ---
 
+
+
 ## **Часть XVI. Перед HW2**
 
 Домашка проверяет не «знание синтаксиса», а **контракт результата**: grain, имена колонок, порядок строк, границы и округление. Ниже – карта «какой приём где», без готовых ответов.
 
 
-| Задачи             | Что отработать из конспекта                      |
-| ------------------ | ------------------------------------------------ |
-| Q01, Q13           | `GROUP BY`, сортировка по агрегату               |
-| Q02, Q11           | несколько агрегатов, `round(avg(...), 2)`        |
-| Q03, Q06, Q10, Q14 | `HAVING`, порог на размер группы                 |
-| Q04                | `MIN`/`MAX`, одна строка без `GROUP BY`          |
-| Q12                | `MAX` внутри `GROUP BY`                          |
-| Q05, Q09           | scalar-подзапрос в `WHERE` / `HAVING`            |
-| Q07                | `WHERE` до группировки + `bookings.now()`        |
-| Q08, Q16           | `FILTER`, задержка через `extract`               |
-| Q15                | подзапрос во `FROM`, затем `avg` / `min` / `max` |
-| Q17                | `string_agg`, `HAVING` на `sum(price)`           |
-| Q18                | `WITH`, scalar по CTE                            |
-| Q19                | `COUNT(DISTINCT ...)` внутри `GROUP BY`          |
+| Задачи      | Что отработать из конспекта                     |
+| ----------- | ------------------------------------------------ |
+| Q01–Q03     | агрегаты без `GROUP BY`: `COUNT`, `MIN` / `MAX`, несколько сразу |
+| Q04, Q05    | `GROUP BY`, несколько агрегатов в группе           |
+| Q06–Q08, Q10 | `HAVING`, `WHERE` до группировки, две колонки в группе |
+| Q09         | `MAX` внутри `GROUP BY`                          |
+| Q11         | `FILTER`                                         |
+| Q12         | scalar-подзапрос в `HAVING`                      |
+| Q13         | `HAVING` на `count` и `sum`                      |
+| Q14         | подзапрос во `FROM`                              |
+| Q15         | `WITH`                                           |
+| Q16         | средняя задержка как `interval`                 |
+| Q17         | `string_agg`                                     |
 
 
 **Чеклист перед отправкой файла:**
@@ -760,11 +909,13 @@ FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT
 - [ ] имя файла из почты: `avivanov_hw2.sql`;
 - [ ] маркеры `-- >>> Q01` … на месте, в блоке один statement;
 - [ ] для каждой задачи проговорен grain;
-- [ ] `LIMIT` только там, где в условии; после полного `ORDER BY` с tie-breaker;
+- [ ] объём ответа задаёт `WHERE` / `HAVING`, а не «лишний» `LIMIT`;
 - [ ] `bookings.now()` вместо `now()`;
 - [ ] нет `SET search_path` в сдаваемом SQL.
 
 ---
+
+
 
 ## **Итог**
 
@@ -780,7 +931,7 @@ FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT
 - склеили текст группы через `string_agg`, затем собрали промежуточный результат во `FROM`;
 - познакомились с `WITH` как именованным шагом.
 
-На следующей паре соединим таблицы через `JOIN` и разберём CTE в многошаговых запросах.
+На следующей паре соединим таблицы через `JOIN` и познакомимся с операциями над множествами.
 
 ## **Полезное**
 

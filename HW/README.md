@@ -4,10 +4,10 @@
 
 Ответы каждого ДЗ – **один** `.sql` файл. Имя **обязательно** берётся из корпоративной почты: то, что стоит до `@edu.hse.ru`, плюс `_hwN.sql`.
 
-| Почта | Файл HW1 | Файл HW2 |
-| --- | --- | --- |
-| `avivanov@edu.hse.ru` | `avivanov_hw1.sql` | `avivanov_hw2.sql` |
-| `avivanov_1@edu.hse.ru` | `avivanov_1_hw1.sql` | `avivanov_1_hw2.sql` |
+| Почта | Файл HW1 | Файл HW2 | Файл HW3 |
+| --- | --- | --- | --- |
+| `avivanov@edu.hse.ru` | `avivanov_hw1.sql` | `avivanov_hw2.sql` | `avivanov_hw3.sql` |
+| `avivanov_1@edu.hse.ru` | `avivanov_1_hw1.sql` | `avivanov_1_hw2.sql` | `avivanov_1_hw3.sql` |
 
 ## Как устроен `.sql`
 
