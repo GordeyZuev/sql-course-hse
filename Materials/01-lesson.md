@@ -712,6 +712,7 @@ FROM → WHERE → SELECT → ORDER BY → LIMIT
 
 Фильтр выполняется, когда списка колонок результата ещё нет. `planned_duration` в этот момент не существует.
 
+<!-- sql-smoke: skip -->
 ```sql
 -- Ошибка: псевдонима в WHERE ещё нет.
 SELECT flight_id,
@@ -889,6 +890,7 @@ LIMIT 10;
 
 `AND` связывает сильнее, чем `OR`. Если в одном фильтре есть и то и другое, поставьте скобки вокруг смысла:
 
+<!-- sql-smoke: skip -->
 ```sql
 WHERE (departure_airport = 'LED' OR arrival_airport = 'LED')
   AND status = 'Scheduled'
@@ -923,6 +925,7 @@ ORDER BY speed, airplane_code;
 
 Поэтому время сравниваем так: начало включено, конец исключён.
 
+<!-- sql-smoke: skip -->
 ```sql
 event_time >= period_start
 AND event_time < period_end
@@ -1124,6 +1127,7 @@ ORDER BY range DESC, airplane_code;
 
 `WHERE` оставляет только `TRUE`. `UNKNOWN` выкидывается. Поэтому так всегда пусто:
 
+<!-- sql-smoke: skip -->
 ```sql
 WHERE actual_departure = NULL
 ```
